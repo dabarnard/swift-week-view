@@ -3,72 +3,73 @@ import SwiftUI
 
 struct EventView: View {
 
-    let event: EKEvent
-    let eventStore: EKEventStore
-
+    let event: Event
+    @State  var eventTapHandler: ((Event) -> Void)? = nil
     @State private var presentEdit = false
+    
 
-    private var color: Color { Color(event.calendar.cgColor) }
+    private var color: Color { event.color}
 
     var body: some View {
-        HStack(spacing: 0) {
-            color
-                .frame(width: 8)
-                .opacity(0.9)
-            ZStack {
-                color.opacity(0.2)
-                HStack {
-                    VStack(alignment: .leading, spacing: 0) {
-                        Text(event.title)
-                            .font(.caption)
-                            .foregroundColor(color)
-                            .fontWeight(.semibold)
-                            .frame(alignment: .leading)
-                            .padding([.top, .leading, .trailing], 8)
-                            .padding([.bottom], 1)
-                            .multilineTextAlignment(.leading)
-                        if let location = event.location {
-                            Text(location)
-                                .font(.caption2)
+        GeometryReader { mainGeo in
+            HStack(spacing: 0) {
+                color
+                    .frame(width: 8)
+                    .opacity(0.9)
+                ZStack {
+                    color.opacity(0.2)
+                    HStack {
+                        VStack(alignment: .leading, spacing: 0) {
+                            Text(event.title)
+                                .font(.caption)
                                 .foregroundColor(color)
+                                .fontWeight(.semibold)
                                 .frame(alignment: .leading)
-                                .padding([.leading], 8)
+                                .padding([.top, .leading, .trailing], 8)
+                                .padding([.bottom], 1)
                                 .multilineTextAlignment(.leading)
+                            if let location = event.location {
+                                Text(location)
+                                    .font(.caption2)
+                                    .foregroundColor(color)
+                                    .frame(alignment: .leading)
+                                    .padding([.leading], 8)
+                                    .multilineTextAlignment(.leading)
+                            }
+                            Spacer()
                         }
                         Spacer()
                     }
-                    Spacer()
                 }
             }
+            .foregroundColor(Color.black)
+            .cornerRadius(3)
+            .simultaneousGesture(TapGesture().onEnded {
+                // Do something
+            }.sequenced(before: DragGesture(minimumDistance: 0, coordinateSpace: .local).onEnded { value in
+    //            let newStartTime = CGFloat((value.location.y) / secondHeight(for: mainGeo))
+    //            let dateComponent = Calendar.current.dateComponents([.year, .month, .day, .timeZone], from: day.date)
+    //            let date = Calendar.current.date(from: dateComponent)!
+    //            let s = date.addingTimeInterval(TimeInterval(newStartTime))
+                if value.location.y < mainGeo.size.height{
+                    eventTapHandler?(event)
+                }
+            
+            }))
         }
-        .cornerRadius(3)
-        .onTapGesture { presentEdit.toggle() }
-        .sheet(isPresented: $presentEdit) { EventEditView(event: event, eventStore: eventStore) }
     }
 }
 
 struct EventView_Preview: PreviewProvider {
 
-    private static let eventStore = EKEventStore()
+    private static var event: Event {
+        let event = Event(id: UUID(), title: "Interview @Apple", location: "Cupertino, CA", start: Date(), end: Date().addingTimeInterval(1.hours), isAllDay: false)
 
-    private static var calendar: EKCalendar {
-        let calendar = EKCalendar(for: .event, eventStore: eventStore)
-        calendar.cgColor = Color(.red).cgColor
-        return calendar
-    }
-
-    private static var event: EKEvent {
-        let event = EKEvent(eventStore: eventStore)
-        event.title = "Interview @Apple"
-        event.location = "Cupertino, CA"
-        event.startDate = Date()
-        event.endDate = Date().addingTimeInterval(1.hours)
-        event.calendar = calendar
         return event
     }
 
     static var previews: some View {
-        EventView(event: event, eventStore: eventStore)
+        EventView(event: event)
             .previewLayout(.fixed(width: 200, height: 200))
     }
 }

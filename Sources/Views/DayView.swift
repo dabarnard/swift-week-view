@@ -17,6 +17,8 @@ struct DayView: View {
     @State var day: CalendarDay
     @State private var time: TimeInterval = 0
     @State private var showAllDay = false
+    @State var freeTimeTapHandler: ((Date) -> Void)? = nil
+    @State var eventTapHandler: ((Event) -> Void)? = nil
 
     private var dayCapsule: some View {
         Text(dayString())
@@ -30,66 +32,80 @@ struct DayView: View {
     }
 
     var body: some View {
-        ZStack {
-            GeometryReader { geometry in
-                VStack {
-                    ForEach(0..<25) { hour in
-                        VStack {
-                            LinearGradient(
-                                gradient: .init(colors: [Color(.lightGray), .clear]),
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                            .frame(height: 1)
-                            .opacity(0.2)
-                            Spacer()
+        GeometryReader { mainGeo in
+            ZStack {
+                GeometryReader { geometry in
+                    VStack {
+                        ForEach(0..<25) { hour in
+                            VStack {
+                                LinearGradient(
+                                    gradient: .init(colors: [Color(.lightGray), .clear]),
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                                .frame(height: 1)
+                                .opacity(0.2)
+                                Spacer()
+                            }
+                           
                         }
                     }
                 }
-            }
 
-            GeometryReader {
-                events(with: $0)
-            }
-            .contentShape(Rectangle())
-            .clipped()
-            .onDrop(of: [.data], delegate: self)
-            
-            if day.date.isToday {
-                GeometryReader { geometry in
-                    LinearGradient(
-                        gradient: .init(colors: [.red, .clear]),
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                        .frame(height: 1)
-                        .offset(y: CGFloat(time) * secondHeight(for: geometry))
+                GeometryReader {
+                    events(with: $0)
                 }
-            }
+                .contentShape(Rectangle())
+                .clipped()
+                .onDrop(of: [.data], delegate: self)
+                
+                if day.date.isToday {
+                    GeometryReader { geometry in
+                        LinearGradient(
+                            gradient: .init(colors: [.red, .clear]),
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                            .frame(height: 1)
+                            .offset(y: CGFloat(time) * secondHeight(for: geometry))
+                    }
+                }
 
 
-            VStack {
-                HStack {
+                VStack {
+                    HStack {
+                        Spacer()
+                        dayCapsule
+                    }
+                    if !day.events.filter({ $0.isAllDay }).isEmpty {
+                        AllDayView(
+                            events: day.events.filter { $0.isAllDay }
+                        )
+                        .padding([.leading, .trailing], 8)
+                    }
                     Spacer()
-                    dayCapsule
                 }
-                if !day.events.filter({ $0.isAllDay }).isEmpty {
-                    AllDayView(
-                        events: day.events.filter { $0.isAllDay },
-                        eventStore: day.eventStore
-                    )
-                    .padding([.leading, .trailing], 8)
-                }
-                Spacer()
             }
+            .simultaneousGesture(TapGesture().onEnded {
+                
+            }.sequenced(before: DragGesture(minimumDistance: 0, coordinateSpace: .local).onEnded { value in
+                let newStartTime = CGFloat((value.location.y) / secondHeight(for: mainGeo))
+                let dateComponent = Calendar.current.dateComponents([.year, .month, .day, .timeZone], from: day.date)
+                let date = Calendar.current.date(from: dateComponent)!
+                let s = date.addingTimeInterval(TimeInterval(newStartTime))
+                let overlapsEvent = day.events.filter{s.isBetween($0.start, and: $0.end)}.count > 0
+                if !overlapsEvent {
+                    freeTimeTapHandler?(s)
+                }
+            }))
+            .onAppear { startTimer() }
         }
-        .onAppear { startTimer() }
     }
 
     private func events(with geometry: GeometryProxy) -> some View {
-        return ForEach(day.events.filter { !$0.isAllDay }, id: \.eventIdentifier) { event in
-            EventView(event: event, eventStore: day.eventStore)
-                .onDrag { NSItemProvider(object: DropData(dropAreaSize: geometry.size, eventIdentifier: event.eventIdentifier)) }
+        return ForEach(day.events.filter { !$0.isAllDay }, id: \.id) { event in
+            EventView(event: event, eventTapHandler: {eventTapHandler?($0)})
+                .onDrag { NSItemProvider(object: DropData(dropAreaSize: geometry.size, eventIdentifier: event.id.uuidString)) }
                 .offset(y: startHourOffset(for: event, with: geometry))
                 .frame(
                     width: width(for: event, with: geometry),
@@ -99,21 +115,21 @@ struct DayView: View {
         }
     }
 
-    private func height(for event: EKEvent, with geometry: GeometryProxy) -> CGFloat {
-        let isFromPreviousDay = !event.startDate.isSameDay(as: day.date)
-        let isToNextDay = !event.endDate.isSameDay(as: day.date)
+    private func height(for event: Event, with geometry: GeometryProxy) -> CGFloat {
+        let isFromPreviousDay = !event.start.isSameDay(as: day.date)
+        let isToNextDay = !event.end.isSameDay(as: day.date)
         let start = isFromPreviousDay ? 0 : event.startHour.hours + event.startMinute.minutes
         let end = isToNextDay ? 2.days : event.endHour.hours + event.endMinute.minutes
 
         return CGFloat(end - start) * secondHeight(for: geometry)
     }
 
-    private func width(for event: EKEvent, with geometry: GeometryProxy) -> CGFloat {
+    private func width(for event: Event, with geometry: GeometryProxy) -> CGFloat {
         let overlappingEvents = day.events.overlappingEvents(against: event)
         return geometry.size.width / CGFloat(overlappingEvents.count + 1)
     }
 
-    private func xOffset(for event: EKEvent, with geometry: GeometryProxy) -> CGFloat {
+    private func xOffset(for event: Event, with geometry: GeometryProxy) -> CGFloat {
         let events = day.events
             .overlappingEvents(against: event)
             .appending(event)
@@ -123,8 +139,8 @@ struct DayView: View {
         return CGFloat(index) * width(for: event, with: geometry)
     }
 
-    private func startHourOffset(for event: EKEvent, with geometry: GeometryProxy) -> CGFloat {
-        guard event.startDate.isSameDay(as: day.date) else {
+    private func startHourOffset(for event: Event, with geometry: GeometryProxy) -> CGFloat {
+        guard event.start.isSameDay(as: day.date) else {
             return 0
         }
 
@@ -160,25 +176,25 @@ struct DayView: View {
 
 extension DayView: DropDelegate {
     func performDrop(info: DropInfo) -> Bool {
-        for item in info.itemProviders(for: [.data]) {
-            _ = item.loadObject(ofClass: DropData.self) { dropData, error in
-                guard let dropData = dropData as? DropData,
-                      let event = day.eventStore.event(withIdentifier: dropData.eventIdentifier) else { return }
-
-                let duration = event.endDate.timeIntervalSince1970 - event.startDate.timeIntervalSince1970
-
-                // seconds since 0:00
-                let newStartTime = CGFloat((info.location.y - 35) / secondHeight(for: dropData.dropAreaSize.height))
-                let roundedNewStartTime = newStartTime.roundToNearest(CGFloat(15.minutes))
-                let dateComponent = Calendar.current.dateComponents([.year, .month, .day, .timeZone], from: day.date)
-                let date = Calendar.current.date(from: dateComponent)!
-
-                event.startDate = date.addingTimeInterval(TimeInterval(roundedNewStartTime))
-                event.endDate = event.startDate.addingTimeInterval(duration)
-
-                try? day.eventStore.save(event, span: .thisEvent)
-            }
-        }
+//        for item in info.itemProviders(for: [.data]) {
+//            _ = item.loadObject(ofClass: DropData.self) { dropData, error in
+//                guard let dropData = dropData as? DropData,
+//                      let event = day.events.first(where: {$0.id.uuidString == dropData.eventIdentifier}) else { return }
+//
+//                let duration = event.end.timeIntervalSince1970 - event.start.timeIntervalSince1970
+//
+//                // seconds since 0:00
+//                let newStartTime = CGFloat((info.location.y - 35) / secondHeight(for: dropData.dropAreaSize.height))
+//                let roundedNewStartTime = newStartTime.roundToNearest(CGFloat(15.minutes))
+//                let dateComponent = Calendar.current.dateComponents([.year, .month, .day, .timeZone], from: day.date)
+//                let date = Calendar.current.date(from: dateComponent)!
+//
+//                event.start = date.addingTimeInterval(TimeInterval(roundedNewStartTime))
+//                event.end = event.start.addingTimeInterval(duration)
+//
+//                try? day.eventStore.save(event, span: .thisEvent)
+//            }
+//        }
         return true
     }
 
@@ -190,10 +206,10 @@ extension DayView: DropDelegate {
 struct DayView_Preview: PreviewProvider {
 
     private static var calendarDay: CalendarDay {
-        var events = [EKEvent]()
-        events.append(event(with: "Interview @Apple", location: "Cupertino, CA"))
-        events.append(event(with: "My Birthday", isAllDay: true))
-        return .init(date: Date(), events: events, eventStore: eventStore)
+        var events = [Event]()
+        events.append(Event(id: UUID(), title: "Preview event", location: "Hintonburg", start: Date(), end: Date().addingTimeInterval(1.hours), isAllDay: true))
+        events.append(Event(id: UUID(), title: "Interview @Apple", location: "Cupertino, CA", start: Date(), end: Date().addingTimeInterval(1.hours), isAllDay: false))
+        return .init(date: Date(), events: events)
     }
 
     static var previews: some View {

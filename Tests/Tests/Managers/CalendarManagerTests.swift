@@ -6,12 +6,12 @@ import XCTest
 final class CalendarManagerTests: XCTestCase {
 
     private var eventStore: MockEKEventStore!
-    private var calendarManager: CalendarManager!
+    private var calendarManager: SampleCalendarManager!
 
     override func setUp() {
         super.setUp()
         eventStore = MockEKEventStore()
-        calendarManager = CalendarManager(eventStore: eventStore)
+        calendarManager = SampleCalendarManager(eventStore: eventStore)
     }
 
     func testThatEventStoreIsCorrect() {

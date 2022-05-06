@@ -28,7 +28,12 @@ public struct ECWeekView: View {
                             ECScrollView(.horizontal, showsIndicators: false) {
                                 HStack(spacing: 0) {
                                     ForEach(viewModel.days, id: \.id) { day in
-                                        DayView(day: day).frame(width: geometry.size.width / CGFloat(viewModel.visibleDays))
+                                        DayView(
+                                            day: day,
+                                            freeTimeTapHandler: { viewModel.freeTimeTapped(date: $0) },
+                                            eventTapHandler: {viewModel.eventTapped(event: $0)}
+                                        )
+                                        .frame(width: geometry.size.width / CGFloat(viewModel.visibleDays))
                                     }
                                 }
                             }
@@ -58,26 +63,18 @@ extension ECWeekView {
 
     public final class ViewModel: ObservableObject {
 
-        private enum LoadDirection {
-            case all, positive, negative
-
-            var all: Bool { self == .all }
-            var positive: Bool { self == .positive }
-            var negative: Bool { self == .negative }
-        }
-
         // MARK: - Public Properties
 
         @Published public var visibleDays: Int
         @Published public var visibleHours: Int
+        
         @Published public var days = [CalendarDay]()
-
+        public var daysInFuture: Int
         // MARK: - Private Properties
 
         private let calendarManager: CalendarManaging
 
-        private var negativeRefrenceDate: Date
-        private var positiveReferenceDate: Date
+        private var initialReferenceDate: Date
 
         private var contentSize = CGSize.zero
         private var scrollViewSize = CGSize.zero
@@ -88,31 +85,24 @@ extension ECWeekView {
 
         // MARK: - Lifecycle
 
-        public init(calendarManager: CalendarManaging = CalendarManager(), visibleDays: Int = 1, visibleHours: Int = 12) {
+        public init(calendarManager: CalendarManaging = SampleCalendarManager(), visibleDays: Int = 1, visibleHours: Int = 12, daysInFuture: Int = 15) {
 
             self.calendarManager = calendarManager
             self.visibleDays = visibleDays
             self.visibleHours = visibleHours
+            self.daysInFuture = daysInFuture
 
-            let initialReferenceDate = Calendar.current.date(bySettingHour: 0, minute: 0, second: 1, of: Date())!
-            positiveReferenceDate = initialReferenceDate.addingTimeInterval(TimeInterval(visibleDays.days))
-            negativeRefrenceDate = initialReferenceDate.addingTimeInterval(TimeInterval(-visibleDays.days))
+            initialReferenceDate = Calendar.current.date(bySettingHour: 0, minute: 0, second: 1, of: Date())!
 
-            NotificationCenter.default.addObserver(forName: .EKEventStoreChanged, object: nil, queue: .main) { [weak self] notification in
-                guard let self = self, notification.isCalendarDataChanged else { return }
-                self.fetchEvents(loadDirection: .all)
-                    .sink { self.days = $0 }
-                    .store(in: &self.cancellables)
+            days = (0..<daysInFuture).map { day in
+                let date = initialReferenceDate.advanced(by: TimeInterval(day.days))
+                return CalendarDay(date: date, events: [])
             }
 
-            // put some initial data to display an empty calendar
-            days = (0..<loadCount(for: .all)).map { day in
-                let date = negativeRefrenceDate.advanced(by: TimeInterval(day.days))
-                return CalendarDay(date: date, events: [], eventStore: calendarManager.eventStore)
-            }
-
-            fetchEvents(loadDirection: .all)
-                .sink { self.days = $0 }
+            fetchEvents(daysInFuture: daysInFuture)
+                .sink { events in
+                    self.days = events
+                }
                 .store(in: &cancellables)
         }
 
@@ -121,58 +111,33 @@ extension ECWeekView {
         func contentOffsetChanged(_ contentOffset: CGPoint, with contentSize: CGSize, scrollViewSize: CGSize, scrollViewProxy: ScrollViewProxy) {
             self.contentSize = contentSize
             self.scrollViewSize = scrollViewSize
-
             if !initialContentLoaded {
                 initialContentLoaded.toggle()
-
-                let middleDay = days[visibleDays]
+                let startingDay = days[0]
                 DispatchQueue.main.asyncAfter(deadline: .now()) {
-                    scrollViewProxy.scrollTo(middleDay.id, anchor: .leading)
+                    scrollViewProxy.scrollTo(startingDay.id, anchor: .leading)
                 }
             }
         }
 
         func didEndDecelerating(_ contentOffset: CGPoint, scrollViewProxy: ScrollViewProxy) {
-            guard !days.isEmpty else { return }
-
-            if contentOffset.x <= 0 {
-                let oldReferenceDate = negativeRefrenceDate
-                negativeRefrenceDate.addTimeInterval(-loadCount(for: .negative).days)
-                fetchEvents(loadDirection: .negative)
-                    .sink { [weak self] days in
-                        guard let self = self else { return }
-                        self.days.insert(contentsOf: days, at: 0)
-                        guard let day = self.days.first(where: { $0.date.isSameDay(as: oldReferenceDate) }) else { return }
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.0001) {
-                            scrollViewProxy.scrollTo(day.id, anchor: .leading)
-                        }
-                    }
-                    .store(in: &cancellables)
-            } else if contentOffset.x >= contentSize.width - scrollViewSize.width {
-                positiveReferenceDate.addTimeInterval(loadCount(for: .positive).days)
-                fetchEvents(loadDirection: .positive)
-                    .sink { [weak self] days in
-                        guard let self = self else { return }
-                        var days = days
-                        self.days = self.days.map { day in
-                            guard let sameDay = days.first(where: { $0.date == day.date }) else { return day }
-                            if let index = days.firstIndex(of: sameDay) { days.remove(at: index) }
-                            return sameDay
-                        }
-                        self.days.append(contentsOf: days)
-                    }
-                    .store(in: &cancellables)
-            }
+        }
+        
+        func eventTapped(event:Event) {
+            calendarManager.eventTapped(event: event)
+        }
+        
+        func freeTimeTapped(date:Date) {
+            calendarManager.freeTimeTapped(date: date)
         }
 
         // MARK: - Private Methods
 
-        private func fetchEvents(loadDirection: LoadDirection) -> AnyPublisher<[CalendarDay], Never> {
+        private func fetchEvents(daysInFuture: Int) -> AnyPublisher<[CalendarDay], Never> {
 
-            let days = (0..<loadCount(for: loadDirection))
+            let days = (0..<daysInFuture)
                 .map { day -> Date in
-                    (loadDirection.positive ? positiveReferenceDate : negativeRefrenceDate)
-                        .addingTimeInterval(TimeInterval(day.days))
+                    (initialReferenceDate).addingTimeInterval(TimeInterval(day.days))
                 }
                 .map { day(for: $0) }
 
@@ -186,20 +151,12 @@ extension ECWeekView {
 
         private func day(for date: Date) -> Future<CalendarDay, Never> {
             Future() { [weak self] result in
+                let _ = print(date)
                 guard let self = self else { return }
                 self.calendarManager.eventsFor(day: date) { events in
-                    let day = CalendarDay(date: date, events: events, eventStore: self.calendarManager.eventStore)
+                    let day = CalendarDay(date: date, events: events)
                     result(.success(day))
                 }
-            }
-        }
-
-        private func loadCount(for loadDirection: LoadDirection) -> Int {
-            switch loadDirection {
-            case .all:
-                return Int(negativeRefrenceDate.distance(to: positiveReferenceDate) / 1.days)
-            case .positive, .negative:
-                return visibleDays * 3
             }
         }
     }
@@ -207,23 +164,11 @@ extension ECWeekView {
 
 struct ECWeekView_Previews: PreviewProvider {
 
-    private struct PreviewCalendarManager: CalendarManaging {
-        var authorizationStatus: EKAuthorizationStatus { .authorized }
 
-        var eventStore: EKEventStore
-
-        func eventsFor(day date: Date, completion: (([EKEvent]) -> Void)?) {
-            var events = [EKEvent]()
-            events.append(ECWeekView_Previews.event(with: "Interview @Apple", location: "Ottawa", for: date))
-            events.append(ECWeekView_Previews.event(with: "My Birthday", for: date, isAllDay: true))
-            completion?(events)
-        }
-    }
-
-    private static let calendarManager = PreviewCalendarManager(eventStore: eventStore)
+    private static let calendarManager = SampleCalendarManager()
 
     private static var viewModel: ECWeekView.ViewModel {
-        .init(calendarManager: calendarManager, visibleDays: 2, visibleHours: 12)
+        .init(visibleDays: 2, visibleHours: 12)
     }
 
     static var previews: some View {

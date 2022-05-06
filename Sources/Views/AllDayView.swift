@@ -3,8 +3,7 @@ import SwiftUI
 
 struct AllDayEventView: View {
 
-    let event: EKEvent
-    let eventStore: EKEventStore
+    let event: Event
 
     @State private var presentEditEvent = false
 
@@ -19,7 +18,7 @@ struct AllDayEventView: View {
     }
 
     private var eventColor: Color {
-        Color(event.calendar.cgColor)
+        event.color
     }
 
     var body: some View {
@@ -31,16 +30,15 @@ struct AllDayEventView: View {
             .frame(maxWidth: .infinity)
             .background(eventColor.opacity(0.2))
             .onTapGesture { presentEditEvent.toggle() }
-            .sheet(isPresented: $presentEditEvent) {
-                EventEditView(event: event, eventStore: eventStore)
-            }
+//            .sheet(isPresented: $presentEditEvent) {
+//                EventEditView(event: event, eventStore: eventStore)
+//            }
     }
 }
 
 struct AllDayView: View {
 
-    let events: [EKEvent]
-    let eventStore: EKEventStore
+    let events: [Event]
 
     @State private var show = false
     @Environment(\.colorScheme) private var colorScheme
@@ -57,7 +55,7 @@ struct AllDayView: View {
         VStack {
             if show {
                 VStack(alignment: .leading, spacing: 2) {
-                    ForEach(events) { AllDayEventView(event: $0, eventStore: eventStore) }
+                    ForEach(events) { AllDayEventView(event: $0) }
                 }
                 .padding(2)
                 .background(backgroundColor)
@@ -89,27 +87,14 @@ struct AllDayView: View {
 }
 
 struct AllDayView_Previews: PreviewProvider {
-    private static let eventStore = EKEventStore()
 
-    private static var calendar: EKCalendar {
-        let calendar = EKCalendar(for: .event, eventStore: eventStore)
-        calendar.cgColor = Color(.red).cgColor
-        return calendar
-    }
-
-    private static var event: EKEvent {
-        let event = EKEvent(eventStore: eventStore)
-        event.title = "Preview event"
-        event.location = "Hintonburg"
-        event.startDate = Date()
-        event.endDate = Date().addingTimeInterval(1.hours)
-        event.isAllDay = true
-        event.calendar = calendar
+    private static var event: Event {
+        let event = Event(id: UUID(), title: "Preview event", location: "Hintonburg", start: Date(), end: Date().addingTimeInterval(1.hours), isAllDay: true)
         return event
     }
 
     static var previews: some View {
-        AllDayView(events: [event, event, event], eventStore: eventStore)
+        AllDayView(events: [event, event, event])
             .preferredColorScheme(.dark)
             .previewLayout(.fixed(width: 500, height: 300))
             .previewDevice(nil)
