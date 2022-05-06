@@ -123,7 +123,7 @@ extension ECWeekView {
         func didEndDecelerating(_ contentOffset: CGPoint, scrollViewProxy: ScrollViewProxy) {
         }
         
-        func eventTapped(event:Event) {
+        func eventTapped(event:ECEvent) {
             calendarManager.eventTapped(event: event)
         }
         

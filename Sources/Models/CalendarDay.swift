@@ -4,9 +4,9 @@ public struct CalendarDay: Comparable, Identifiable, Hashable {
     
     public let id = UUID()
     public let date: Date
-    public var events: [Event]
+    public var events: [ECEvent]
 
-    public init(date: Date, events: [Event]) {
+    public init(date: Date, events: [ECEvent]) {
         self.date = date
         self.events = events
     }

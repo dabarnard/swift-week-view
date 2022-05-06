@@ -3,7 +3,7 @@ import SwiftUI
 
 struct AllDayEventView: View {
 
-    let event: Event
+    let event: ECEvent
 
     @State private var presentEditEvent = false
 
@@ -38,7 +38,7 @@ struct AllDayEventView: View {
 
 struct AllDayView: View {
 
-    let events: [Event]
+    let events: [ECEvent]
 
     @State private var show = false
     @Environment(\.colorScheme) private var colorScheme
@@ -88,8 +88,8 @@ struct AllDayView: View {
 
 struct AllDayView_Previews: PreviewProvider {
 
-    private static var event: Event {
-        let event = Event(id: UUID(), title: "Preview event", location: "Hintonburg", start: Date(), end: Date().addingTimeInterval(1.hours), isAllDay: true)
+    private static var event: ECEvent {
+        let event = ECEvent(id: UUID(), title: "Preview event", location: "Hintonburg", start: Date(), end: Date().addingTimeInterval(1.hours), isAllDay: true)
         return event
     }
 

@@ -8,7 +8,7 @@
 import Foundation
 import SwiftUI
 
-public struct Event : Identifiable, Hashable {
+public struct ECEvent : Identifiable, Hashable {
     public var id: UUID
     public var title: String
     public var location: String
@@ -34,8 +34,8 @@ public struct Event : Identifiable, Hashable {
     }
 }
 
-public extension Array where Element == Event {
-    func overlappingEvents(against event: Event) -> Self {
+public extension Array where Element == ECEvent {
+    func overlappingEvents(against event: ECEvent) -> Self {
         self
             .filter { !$0.isAllDay }
             .filter { someEvent in
@@ -45,14 +45,14 @@ public extension Array where Element == Event {
     }
 }
 
-public extension Event {
+public extension ECEvent {
     private var cal: Calendar { .current }
     var startHour: Int { cal.component(.hour, from: start) }
     var startMinute: Int { cal.component(.minute, from: start) }
     var endHour: Int { cal.component(.hour, from: end) }
     var endMinute: Int { cal.component(.minute, from: end) }
 
-    func collides(with event: Event) -> Bool {
+    func collides(with event: ECEvent) -> Bool {
         let startComparison = event.start.compare(start)
         let startsBeforeStart = startComparison == .orderedAscending
         let startsAfterStart = startComparison == .orderedDescending
@@ -85,8 +85,8 @@ public extension Event {
 }
 
 
-extension Event: Comparable {
-    public static func < (lhs: Event, rhs: Event) -> Bool {
+extension ECEvent: Comparable {
+    public static func < (lhs: ECEvent, rhs: ECEvent) -> Bool {
         let comparison = lhs.start.compare(rhs.start)
         guard comparison != .orderedSame else { return lhs.title < rhs.title }
         return comparison == .orderedAscending

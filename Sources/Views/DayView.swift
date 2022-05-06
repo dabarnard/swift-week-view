@@ -18,7 +18,7 @@ struct DayView: View {
     @State private var time: TimeInterval = 0
     @State private var showAllDay = false
     @State var freeTimeTapHandler: ((Date) -> Void)? = nil
-    @State var eventTapHandler: ((Event) -> Void)? = nil
+    @State var eventTapHandler: ((ECEvent) -> Void)? = nil
 
     private var dayCapsule: some View {
         Text(dayString())
@@ -115,7 +115,7 @@ struct DayView: View {
         }
     }
 
-    private func height(for event: Event, with geometry: GeometryProxy) -> CGFloat {
+    private func height(for event: ECEvent, with geometry: GeometryProxy) -> CGFloat {
         let isFromPreviousDay = !event.start.isSameDay(as: day.date)
         let isToNextDay = !event.end.isSameDay(as: day.date)
         let start = isFromPreviousDay ? 0 : event.startHour.hours + event.startMinute.minutes
@@ -124,12 +124,12 @@ struct DayView: View {
         return CGFloat(end - start) * secondHeight(for: geometry)
     }
 
-    private func width(for event: Event, with geometry: GeometryProxy) -> CGFloat {
+    private func width(for event: ECEvent, with geometry: GeometryProxy) -> CGFloat {
         let overlappingEvents = day.events.overlappingEvents(against: event)
         return geometry.size.width / CGFloat(overlappingEvents.count + 1)
     }
 
-    private func xOffset(for event: Event, with geometry: GeometryProxy) -> CGFloat {
+    private func xOffset(for event: ECEvent, with geometry: GeometryProxy) -> CGFloat {
         let events = day.events
             .overlappingEvents(against: event)
             .appending(event)
@@ -139,7 +139,7 @@ struct DayView: View {
         return CGFloat(index) * width(for: event, with: geometry)
     }
 
-    private func startHourOffset(for event: Event, with geometry: GeometryProxy) -> CGFloat {
+    private func startHourOffset(for event: ECEvent, with geometry: GeometryProxy) -> CGFloat {
         guard event.start.isSameDay(as: day.date) else {
             return 0
         }
@@ -206,9 +206,9 @@ extension DayView: DropDelegate {
 struct DayView_Preview: PreviewProvider {
 
     private static var calendarDay: CalendarDay {
-        var events = [Event]()
-        events.append(Event(id: UUID(), title: "Preview event", location: "Hintonburg", start: Date(), end: Date().addingTimeInterval(1.hours), isAllDay: true))
-        events.append(Event(id: UUID(), title: "Interview @Apple", location: "Cupertino, CA", start: Date(), end: Date().addingTimeInterval(1.hours), isAllDay: false))
+        var events = [ECEvent]()
+        events.append(ECEvent(id: UUID(), title: "Preview event", location: "Hintonburg", start: Date(), end: Date().addingTimeInterval(1.hours), isAllDay: true))
+        events.append(ECEvent(id: UUID(), title: "Interview @Apple", location: "Cupertino, CA", start: Date(), end: Date().addingTimeInterval(1.hours), isAllDay: false))
         return .init(date: Date(), events: events)
     }
 

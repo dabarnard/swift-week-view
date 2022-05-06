@@ -3,8 +3,8 @@ import SwiftUI
 
 struct EventView: View {
 
-    let event: Event
-    @State  var eventTapHandler: ((Event) -> Void)? = nil
+    let event: ECEvent
+    @State  var eventTapHandler: ((ECEvent) -> Void)? = nil
     @State private var presentEdit = false
     
 
@@ -62,8 +62,8 @@ struct EventView: View {
 
 struct EventView_Preview: PreviewProvider {
 
-    private static var event: Event {
-        let event = Event(id: UUID(), title: "Interview @Apple", location: "Cupertino, CA", start: Date(), end: Date().addingTimeInterval(1.hours), isAllDay: false)
+    private static var event: ECEvent {
+        let event = ECEvent(id: UUID(), title: "Interview @Apple", location: "Cupertino, CA", start: Date(), end: Date().addingTimeInterval(1.hours), isAllDay: false)
 
         return event
     }
