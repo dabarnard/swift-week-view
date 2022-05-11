@@ -165,15 +165,13 @@ extension ECWeekView {
             if self.selectedIndex != unselectedIndex{
                 self.selectedIndex = unselectedIndex
             }
-//            if !initialVerticalContentLoaded {
-//                initialVerticalContentLoaded.toggle()
-//                DispatchQueue.main.asyncAfter(deadline: .now()+0.5.seconds) {
-//                    withAnimation {
-//                        let currentHour = Calendar.current.component(.hour, from: Date())
-//                        proxy.scrollTo(currentHour, anchor: .top)
-//                    }
-//                }
-//            }
+            if !initialVerticalContentLoaded {
+                initialVerticalContentLoaded.toggle()
+                DispatchQueue.main.asyncAfter(deadline: .now()) {
+                    let currentHour = Calendar.current.component(.hour, from: Date())
+                    proxy.scrollTo(currentHour, anchor: .top)
+                }
+            }
         }
 
         func didEndDecelerating(_ contentOffset: CGPoint, scrollViewProxy: ScrollViewProxy) {
