@@ -19,7 +19,8 @@ struct DayView: View {
     @State private var showAllDay = false
     @State var freeTimeTapHandler: ((Date) -> Void)? = nil
     @State var eventTapHandler: ((ECEvent) -> Void)? = nil
-
+    @State var offset: CGFloat = CGFloat.zero
+    
     private var dayCapsule: some View {
         Text(dayString())
             .font(.caption)
@@ -32,6 +33,7 @@ struct DayView: View {
     }
 
     var body: some View {
+ 
         GeometryReader { mainGeo in
             ZStack {
                 GeometryReader { geometry in
@@ -47,7 +49,6 @@ struct DayView: View {
                                 .opacity(0.2)
                                 Spacer()
                             }
-                           
                         }
                     }
                 }
@@ -71,12 +72,12 @@ struct DayView: View {
                     }
                 }
 
-
                 VStack {
                     HStack {
                         Spacer()
                         dayCapsule
                     }
+                    
                     if !day.events.filter({ $0.isAllDay }).isEmpty {
                         AllDayView(
                             events: day.events.filter { $0.isAllDay }
@@ -84,11 +85,19 @@ struct DayView: View {
                         .padding([.leading, .trailing], 8)
                     }
                     Spacer()
-                }
+                }.offset(y: offset)
             }
-            .simultaneousGesture(TapGesture().onEnded {
-                
-            }.sequenced(before: DragGesture(minimumDistance: 0, coordinateSpace: .local).onEnded { value in
+            .background(
+                GeometryReader {
+                    Color.clear.preference(key: ViewOffsetKey.self,
+                        value: -$0.frame(in: .named("scroll")).origin.y)
+                })
+            .onPreferenceChange(ViewOffsetKey.self) {
+                offset = $0
+            }
+            .simultaneousGesture(TapGesture()
+            .onEnded {}
+            .sequenced(before: DragGesture(minimumDistance: 0, coordinateSpace: .local).onEnded { value in
                 let newStartTime = CGFloat((value.location.y) / secondHeight(for: mainGeo))
                 let dateComponent = Calendar.current.dateComponents([.year, .month, .day, .timeZone], from: day.date)
                 let date = Calendar.current.date(from: dateComponent)!

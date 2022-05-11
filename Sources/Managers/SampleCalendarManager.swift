@@ -41,7 +41,3 @@ public struct SampleCalendarManager: CalendarManaging {
         return events
     }
 }
-
-
-
-
