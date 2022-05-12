@@ -30,6 +30,7 @@ public struct ECWeekView: View {
                                         .id(i)
                                 }
                                 .onChange(of: viewModel.selectedIndex) { hour in
+                                    print("scrolling to hour \(hour)")
                                     value.scrollTo(hour, anchor: .top)
                                 }
                                 Spacer()
@@ -153,6 +154,7 @@ extension ECWeekView {
                 initialHorizontalContentLoaded.toggle()
                 let startingDay = days[0]
                 DispatchQueue.main.asyncAfter(deadline: .now()) {
+                    print("initial scroll to current time")
                     proxy.scrollTo(startingDay.id, anchor: .leading)
                 }
             }
