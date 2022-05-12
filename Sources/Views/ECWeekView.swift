@@ -126,7 +126,7 @@ extension ECWeekView {
         // MARK: - Lifecycle
 
         public init(calendarManager: CalendarManaging = SampleCalendarManager(), visibleDays: Int = 1, visibleHours: Int = 12, daysInFuture: Int = 15) {
-            
+            print("initialising weekView")
             self.calendarManager = calendarManager
             self.visibleDays = visibleDays
             self.visibleHours = visibleHours
