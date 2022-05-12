@@ -30,8 +30,10 @@ public struct ECWeekView: View {
                                         .id(i)
                                 }
                                 .onChange(of: viewModel.selectedIndex) { hour in
-                                    print("scrolling to hour \(hour)")
-                                    value.scrollTo(hour, anchor: .top)
+                                    if hour != viewModel.unselectedIndex {
+                                        value.scrollTo(hour, anchor: .top)
+                                    }
+                                    
                                 }
                                 Spacer()
                             }
@@ -103,6 +105,7 @@ extension ECWeekView {
         
         public var verticalOffset = 0.0
         public var daysInFuture: Int
+        var unselectedIndex = -100
         
         // MARK: - Private Properties
 
@@ -118,7 +121,7 @@ extension ECWeekView {
         private var verticalScrollViewSize = CGSize.zero
         private var initialVerticalContentLoaded = false
 
-        private var unselectedIndex = -100
+        
 
         private var cancellables = Set<AnyCancellable>()
         
@@ -154,7 +157,6 @@ extension ECWeekView {
                 initialHorizontalContentLoaded.toggle()
                 let startingDay = days[0]
                 DispatchQueue.main.asyncAfter(deadline: .now()) {
-                    print("initial scroll to current time")
                     proxy.scrollTo(startingDay.id, anchor: .leading)
                 }
             }
@@ -169,10 +171,11 @@ extension ECWeekView {
             }
             if !initialVerticalContentLoaded {
                 initialVerticalContentLoaded.toggle()
-                DispatchQueue.main.asyncAfter(deadline: .now()) {
-                    let currentHour = Calendar.current.component(.hour, from: Date())
-                    proxy.scrollTo(currentHour, anchor: .top)
-                }
+//                DispatchQueue.main.asyncAfter(deadline: .now()) {
+//                    print("initial scroll to current time")
+//                    let currentHour = Calendar.current.component(.hour, from: Date())
+//                    proxy.scrollTo(currentHour, anchor: .top)
+//                }
             }
         }
 
