@@ -157,7 +157,7 @@ extension ECWeekView {
                 initialHorizontalContentLoaded.toggle()
                 let startingDay = days[0]
                 DispatchQueue.main.asyncAfter(deadline: .now()) {
-                    proxy.scrollTo(startingDay.id, anchor: .leading)
+//                    proxy.scrollTo(startingDay.id, anchor: .leading)
                 }
             }
         }
