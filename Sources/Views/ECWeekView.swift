@@ -218,7 +218,7 @@ extension ECWeekView {
             }
             if d != nil {
                 withAnimation {
-                    xProxy?.scrollTo(d!.id, anchor: .trailing)
+                    xProxy?.scrollTo(d!.id)
                     let hour = Calendar.current.component(.hour, from: date)
                     yProxy?.scrollTo(hour)
                 }
