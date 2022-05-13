@@ -29,11 +29,10 @@ public struct ECWeekView: View {
                                         .frame(width: geometry.size.width ,height: geometry.size.height/CGFloat(viewModel.visibleHours))
                                         .id(i)
                                 }
-                                .onChange(of: viewModel.selectedIndex) { hour in
+                                .onChange(of: viewModel.selectedHour) { hour in
                                     if hour != viewModel.unselectedIndex {
                                         value.scrollTo(hour, anchor: .top)
                                     }
-                                    
                                 }
                                 Spacer()
                             }
@@ -101,7 +100,10 @@ extension ECWeekView {
         @Published public var visibleHours: Int
         
         @Published public var days = [CalendarDay]()
-        @Published public var selectedIndex = 0
+        @Published public var selectedHour = 0
+        @Published public var selectedDay = 0
+        
+        @Published public var scrollToHour : ((Date) -> ())? = nil
         
         public var verticalOffset = 0.0
         public var daysInFuture: Int
@@ -121,9 +123,11 @@ extension ECWeekView {
         private var verticalScrollViewSize = CGSize.zero
         private var initialVerticalContentLoaded = false
 
-        
-
+    
         private var cancellables = Set<AnyCancellable>()
+        
+        var xProxy: ScrollViewProxy? = nil
+        var yProxy: ScrollViewProxy? = nil
         
 
         // MARK: - Lifecycle
@@ -146,7 +150,13 @@ extension ECWeekView {
                     self.days = daysWithEvents
                 }
                 .store(in: &cancellables)
+            
+            self.calendarManager.scrollPublisher.sink { date in
+                
+                self.scrollToDate(date: date)
+            }.store(in: &cancellables)
         }
+        
 
         // MARK: - Public Methods
 
@@ -154,10 +164,11 @@ extension ECWeekView {
             self.horizontalContentSize = contentSize
             self.horizontalScrollViewSize = scrollViewSize
             if !initialHorizontalContentLoaded {
+                self.xProxy = proxy
                 initialHorizontalContentLoaded.toggle()
-                let startingDay = days[0]
+                let startingDay = days[selectedDay]
                 DispatchQueue.main.asyncAfter(deadline: .now()) {
-//                    proxy.scrollTo(startingDay.id, anchor: .leading)
+                    proxy.scrollTo(startingDay.id, anchor: .leading)
                 }
             }
         }
@@ -166,16 +177,17 @@ extension ECWeekView {
             self.verticalContentSize = contentSize
             self.verticalScrollViewSize = scrollViewSize
             self.verticalOffset = contentOffset.y
-            if self.selectedIndex != unselectedIndex{
-                self.selectedIndex = unselectedIndex
+            if self.selectedHour != unselectedIndex{
+                self.selectedHour = unselectedIndex
             }
             if !initialVerticalContentLoaded {
+                self.yProxy = proxy
                 initialVerticalContentLoaded.toggle()
-//                DispatchQueue.main.asyncAfter(deadline: .now()) {
-//                    print("initial scroll to current time")
-//                    let currentHour = Calendar.current.component(.hour, from: Date())
-//                    proxy.scrollTo(currentHour, anchor: .top)
-//                }
+                DispatchQueue.main.asyncAfter(deadline: .now()) {
+                    print("initial scroll to current time")
+                    let currentHour = Calendar.current.component(.hour, from: Date())
+                    proxy.scrollTo(currentHour, anchor: .top)
+                }
             }
         }
 
@@ -191,10 +203,22 @@ extension ECWeekView {
         }
         
         public func scrollToHour(hour:Int) {
-            selectedIndex = hour
+            selectedHour = hour
+        }
+        
+        func scrollToDate(date:Date) {
+            let d = days.first{
+                $0.date.isSameDay(as: date)
+            }
+            if d != nil {
+                withAnimation {
+                    xProxy?.scrollTo(d!.id, anchor: .trailing)
+                    let hour = Calendar.current.component(.hour, from: date)
+                    yProxy?.scrollTo(hour, anchor: .leading)
+                }
+            }
         }
     
-
         // MARK: - Private Methods
 
         private func fetchEvents(daysInFuture: Int) -> AnyPublisher<[CalendarDay], Never> {

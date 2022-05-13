@@ -5,12 +5,16 @@ public protocol CalendarManaging {
     func eventsFor(day date: Date, completion: (([ECEvent]) -> Void)?)
     func eventTapped(event:ECEvent)
     func freeTimeTapped(date:Date)
+    var scrollPublisher: Published<Date>.Publisher { get }
 }
 
-public struct SampleCalendarManager: CalendarManaging {
+public class SampleCalendarManager: CalendarManaging {
 
     
     public init() {}
+    
+    @Published public var date: Date = Date()
+    public var scrollPublisher: Published<Date>.Publisher { $date }
     
     public func eventsFor(day date: Date, completion: (([ECEvent]) -> Void)?) {
         completion?(mockEventsFor(day: date))
