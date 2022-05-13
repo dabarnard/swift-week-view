@@ -18,7 +18,6 @@ struct ECWeekViewExampleApp: App {
                         vm.date = Date()
                     }
                 }
-           
         }
     }
 }
@@ -27,6 +26,7 @@ class BookViewModel:ObservableObject {
     var calendarManager = SampleCalendarManager()
     var weekView : ECWeekView.ViewModel
     @Published var date : Date = Date()
+    
 
     
     private var cancellables = Set<AnyCancellable>()
@@ -35,11 +35,15 @@ class BookViewModel:ObservableObject {
         self.weekView = ECWeekView.ViewModel(calendarManager: calendarManager, visibleDays: 3, visibleHours: 4)
         $date.sink{ date in
             self.calendarManager.date = date
+            
         }.store(in: &cancellables)
+        self.calendarManager.events = []
 
+        DispatchQueue.main.asyncAfter(deadline: .now() + 4.seconds) {
+            self.calendarManager.events = [ECEvent(id: UUID(), title: "test", location: "test", start: Date() + 1.hours, end: Date() + 2.hours, isAllDay: false)]
+            self.calendarManager.events = [ECEvent(id: UUID(), title: "test", location: "test", start: Date() + 1.hours, end: Date() + 2.hours, isAllDay: false)]
+        }
     }
-    
-    
 }
 
 extension DateFormatter {

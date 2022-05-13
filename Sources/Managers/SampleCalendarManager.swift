@@ -32,6 +32,7 @@ public class SampleCalendarManager: CalendarManaging {
     
     public func freeTimeTapped(date: Date) {
         print(date)
+        self.date = date
     }
     
     func mockEventsFor(day date:Date, count:Int = 2) -> [ECEvent] {
