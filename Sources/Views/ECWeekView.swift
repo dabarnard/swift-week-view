@@ -152,8 +152,14 @@ extension ECWeekView {
                 .store(in: &cancellables)
             
             self.calendarManager.scrollPublisher.sink { date in
-                
                 self.scrollToDate(date: date)
+            }.store(in: &cancellables)
+            
+            self.calendarManager.eventsPublisher.sink{ (events) in
+                self.fetchEvents(daysInFuture: self.daysInFuture).sink { daysWithEvents in
+                    self.days = daysWithEvents
+                }
+                .store(in: &self.cancellables)
             }.store(in: &cancellables)
         }
         
@@ -222,7 +228,7 @@ extension ECWeekView {
         // MARK: - Private Methods
 
         private func fetchEvents(daysInFuture: Int) -> AnyPublisher<[CalendarDay], Never> {
-
+            print("called fetch event")
             let days = (0..<daysInFuture)
                 .map { day -> Date in
                     (initialReferenceDate).addingTimeInterval(TimeInterval(day.days))

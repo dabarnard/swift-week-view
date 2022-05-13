@@ -6,18 +6,24 @@ public protocol CalendarManaging {
     func eventTapped(event:ECEvent)
     func freeTimeTapped(date:Date)
     var scrollPublisher: Published<Date>.Publisher { get }
+    var eventsPublisher: Published<[ECEvent]>.Publisher { get }
 }
 
 public class SampleCalendarManager: CalendarManaging {
-
     
-    public init() {}
+    @Published public var events: [ECEvent] = []
+    public var eventsPublisher: Published<[ECEvent]>.Publisher { $events }
+    public init() {
+        
+    }
     
     @Published public var date: Date = Date()
     public var scrollPublisher: Published<Date>.Publisher { $date }
+    var fetchCount = 0
     
     public func eventsFor(day date: Date, completion: (([ECEvent]) -> Void)?) {
-        completion?(mockEventsFor(day: date))
+        let e = self.events.filter {$0.start.isBetween(date.startOfDay(), and: date.endOfDay())}
+        completion?(e)
     }
     
     public func eventTapped(event: ECEvent) {
@@ -28,7 +34,7 @@ public class SampleCalendarManager: CalendarManaging {
         print(date)
     }
     
-    func mockEventsFor(day date:Date, count:Int = 0) -> [ECEvent] {
+    func mockEventsFor(day date:Date, count:Int = 2) -> [ECEvent] {
         var events: [ECEvent] = []
         for n in 0...count {
             events.append(
@@ -43,5 +49,20 @@ public class SampleCalendarManager: CalendarManaging {
             )
         }
         return events
+    }
+}
+
+extension Date {
+    /// Returns the Date at the start of day (for current calendar)
+    func startOfDay(in calendar: Calendar = .current) -> Date {
+        calendar.startOfDay(for: self)
+    }
+    
+    /// Returns the Date at the end of day (for current calendar)
+    func endOfDay(in calendar: Calendar = .current) -> Date {
+        var components = DateComponents()
+        components.day = 1
+        components.second = -1
+        return calendar.date(byAdding: components, to: startOfDay(in: calendar))!
     }
 }

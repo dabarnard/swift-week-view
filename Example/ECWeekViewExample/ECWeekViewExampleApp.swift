@@ -27,6 +27,7 @@ class BookViewModel:ObservableObject {
     var calendarManager = SampleCalendarManager()
     var weekView : ECWeekView.ViewModel
     @Published var date : Date = Date()
+
     
     private var cancellables = Set<AnyCancellable>()
     
@@ -35,7 +36,10 @@ class BookViewModel:ObservableObject {
         $date.sink{ date in
             self.calendarManager.date = date
         }.store(in: &cancellables)
+
     }
+    
+    
 }
 
 extension DateFormatter {
