@@ -67,7 +67,7 @@ struct AllDayView: View {
 
                 HStack {
 //                    if show {
-                        Text("All day events")
+                        Text("All day")
                             .font(.caption)
 //                    }
 //                    Image(systemName: "chevron.\(show ? "up" : "down")")
