@@ -10,14 +10,6 @@ struct ECWeekViewExampleApp: App {
     var body: some Scene {
         WindowGroup {
             ECWeekView(viewModel:vm.weekView)
-            DatePicker(selection: $vm.date, in: Date()...Date() + 14.days, displayedComponents: .date) {
-                Text(DateFormatter.shortDateAndWeekDayFormatter.string(from: vm.date))
-            }.labelsHidden()
-                .onAppear{
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.seconds) {
-                        vm.date = Date()
-                    }
-                }
         }
     }
 }
@@ -37,12 +29,12 @@ class BookViewModel:ObservableObject {
             self.calendarManager.date = date
             
         }.store(in: &cancellables)
-        self.calendarManager.events = []
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 4.seconds) {
-            self.calendarManager.events = [ECEvent(id: UUID(), title: "test", location: "test", start: Date() + 1.hours, end: Date() + 2.hours, isAllDay: false)]
-            self.calendarManager.events = [ECEvent(id: UUID(), title: "test", location: "test", start: Date() + 1.hours, end: Date() + 2.hours, isAllDay: false)]
-        }
+//        self.calendarManager.events = []
+//
+//        DispatchQueue.main.asyncAfter(deadline: .now() + 1.seconds) {
+//            self.calendarManager.events = [ECEvent(id: UUID(), title: "test", location: "test", start: Date() + 1.hours, end: Date() + 2.hours, isAllDay: true)]
+//            self.calendarManager.events = [ECEvent(id: UUID(), title: "test", location: "test", start: Date() + 1.hours, end: Date() + 2.hours, isAllDay: true)]
+//        }
     }
 }
 

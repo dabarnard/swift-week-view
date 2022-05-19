@@ -83,6 +83,7 @@ struct DayView: View {
                             events: day.events.filter { $0.isAllDay }
                         )
                         .padding([.leading, .trailing], 8)
+                        
                     }
                     Spacer()
                 }.offset(y: offset)
@@ -102,7 +103,8 @@ struct DayView: View {
                 let dateComponent = Calendar.current.dateComponents([.year, .month, .day, .timeZone], from: day.date)
                 let date = Calendar.current.date(from: dateComponent)!
                 let s = date.addingTimeInterval(TimeInterval(newStartTime))
-                let overlapsEvent = day.events.filter{s.isBetween($0.start, and: $0.end)}.count > 0
+                let eventsExclAllDay = day.events.filter{ !$0.isAllDay}
+                let overlapsEvent = eventsExclAllDay.filter{s.isBetween($0.start, and: $0.end)}.count > 0
                 if !overlapsEvent {
                     freeTimeTapHandler?(s)
                 }

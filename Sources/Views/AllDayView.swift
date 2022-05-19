@@ -78,9 +78,11 @@ struct AllDayView: View {
                 .background(backgroundColor)
                 .clipShape(Capsule())
                 .shadow(color: shadowColor, radius: 5, x: 0, y: 0)
-                .onTapGesture { show.toggle() }
+                .onTapGesture {
+                    show.toggle()
+                    
+                }
             }
-
             Spacer()
         }
     }

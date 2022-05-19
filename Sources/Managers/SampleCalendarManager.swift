@@ -23,7 +23,7 @@ public class SampleCalendarManager: CalendarManaging {
     
     public func eventsFor(day date: Date, completion: (([ECEvent]) -> Void)?) {
         let e = self.events.filter {$0.start.isBetween(date.startOfDay(), and: date.endOfDay())}
-        completion?(e)
+        completion?(mockEventsFor(day: date))
     }
     
     public func eventTapped(event: ECEvent) {
@@ -35,7 +35,7 @@ public class SampleCalendarManager: CalendarManaging {
         self.date = date
     }
     
-    func mockEventsFor(day date:Date, count:Int = 2) -> [ECEvent] {
+    func mockEventsFor(day date:Date, count:Int = 1) -> [ECEvent] {
         var events: [ECEvent] = []
         for n in 0...count {
             events.append(
@@ -45,7 +45,7 @@ public class SampleCalendarManager: CalendarManaging {
                     location: "Event \(n) sub text",
                     start: date.addingTimeInterval(TimeInterval(n*1.hours)),
                     end: date.addingTimeInterval(TimeInterval(n*1.hours)).addingTimeInterval(1.hours),
-                    isAllDay: false
+                    isAllDay: true
                 )
             )
         }
