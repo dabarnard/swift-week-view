@@ -133,7 +133,6 @@ extension ECWeekView {
         // MARK: - Lifecycle
 
         public init(calendarManager: CalendarManaging = SampleCalendarManager(), visibleDays: Int = 1, visibleHours: Int = 12, daysInFuture: Int = 15) {
-            print("initialising weekView")
             self.calendarManager = calendarManager
             self.visibleDays = visibleDays
             self.visibleHours = visibleHours
@@ -190,7 +189,6 @@ extension ECWeekView {
                 self.yProxy = proxy
                 initialVerticalContentLoaded.toggle()
                 DispatchQueue.main.asyncAfter(deadline: .now()) {
-                    print("initial scroll to current time")
                     let currentHour = Calendar.current.component(.hour, from: Date())
                     proxy.scrollTo(currentHour, anchor: .top)
                 }
@@ -228,7 +226,6 @@ extension ECWeekView {
         // MARK: - Private Methods
 
         private func fetchEvents(daysInFuture: Int) -> AnyPublisher<[CalendarDay], Never> {
-            print("called fetch event")
             let days = (0..<daysInFuture)
                 .map { day -> Date in
                     (initialReferenceDate).addingTimeInterval(TimeInterval(day.days))
