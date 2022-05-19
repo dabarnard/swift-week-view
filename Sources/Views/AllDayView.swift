@@ -53,35 +53,34 @@ struct AllDayView: View {
 
     var body: some View {
         VStack {
-            if show {
+//            if show {
                 VStack(alignment: .leading, spacing: 2) {
                     ForEach(events) { AllDayEventView(event: $0) }
                 }
                 .padding(2)
                 .background(backgroundColor)
                 .shadow(color: shadowColor, radius: 5, x: 0, y: 0)
-            }
+//            }
 
             HStack {
                 Spacer()
 
                 HStack {
-                    if show {
+//                    if show {
                         Text("All day events")
                             .font(.caption)
-                    }
-                    Image(systemName: "chevron.\(show ? "up" : "down")")
-                        .font(.caption)
+//                    }
+//                    Image(systemName: "chevron.\(show ? "up" : "down")")
+//                        .font(.caption)
                 }
                 .padding([.top, .bottom], 6)
                 .padding([.leading, .trailing], 8)
                 .background(backgroundColor)
                 .clipShape(Capsule())
                 .shadow(color: shadowColor, radius: 5, x: 0, y: 0)
-                .onTapGesture {
-                    show.toggle()
-                    
-                }
+//                .onTapGesture {
+//                    show.toggle()
+//                }
             }
             Spacer()
         }
