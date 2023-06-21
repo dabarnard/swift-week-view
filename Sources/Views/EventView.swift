@@ -28,8 +28,8 @@ struct EventView: View {
                                 .padding([.top, .leading, .trailing], 8)
                                 .padding([.bottom], 1)
                                 .multilineTextAlignment(.leading)
-                            if let location = event.location {
-                                Text(location)
+                            if event.location != nil && event.location != "" {
+                                Text(event.location)
                                     .font(.caption2)
                                     .foregroundColor(color)
                                     .frame(alignment: .leading)
